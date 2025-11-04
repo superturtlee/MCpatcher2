@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
 
     // 判断目标是进程名还是PID
     DWORD processId = 0;
-start:
+
 	processId = 0;
 
     while (processId == 0) {
@@ -164,11 +164,12 @@ start:
         cout << endl << "========================================" << endl;
         cout << "[SUCCESS] Injection completed!" << endl;
         cout << "========================================" << endl;
+		return 0;
     }
     else {
         cerr << endl << "========================================" << endl;
         cerr << "[FAILED] Injection failed!" << endl;
         cerr << "========================================" << endl;
+		return 1;
     }
-	goto start;
 }
