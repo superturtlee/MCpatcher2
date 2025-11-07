@@ -80,53 +80,10 @@ bool FindAndPatch(uint8_t* baseAddress, size_t regionSize, const Pattern& patter
     return patched;
 }
 
-// Suspend all threads except current
-void SuspendAllThreads(DWORD targetProcessId, DWORD currentThreadId) {
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (hSnapshot == INVALID_HANDLE_VALUE) return;
 
-    THREADENTRY32 te32;
-    te32.dwSize = sizeof(THREADENTRY32);
-
-    if (Thread32First(hSnapshot, &te32)) {
-        do {
-            if (te32.th32OwnerProcessID == targetProcessId &&
-                te32.th32ThreadID != currentThreadId) {
-                HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
-                if (hThread) {
-                    SuspendThread(hThread);
-                    CloseHandle(hThread);
-                }
-            }
-        } while (Thread32Next(hSnapshot, &te32));
-    }
-
-    CloseHandle(hSnapshot);
-}
 
 // Resume all threads except current
-void ResumeAllThreads(DWORD targetProcessId, DWORD currentThreadId) {
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (hSnapshot == INVALID_HANDLE_VALUE) return;
 
-    THREADENTRY32 te32;
-    te32.dwSize = sizeof(THREADENTRY32);
-
-    if (Thread32First(hSnapshot, &te32)) {
-        do {
-            if (te32.th32OwnerProcessID == targetProcessId &&
-                te32.th32ThreadID != currentThreadId) {
-                HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
-                if (hThread) {
-                    ResumeThread(hThread);
-                    CloseHandle(hThread);
-                }
-            }
-        } while (Thread32Next(hSnapshot, &te32));
-    }
-
-    CloseHandle(hSnapshot);
-}
 void InitializePatterns() {
     // Pattern 1
     Pattern pattern1;
@@ -139,7 +96,7 @@ void InitializePatterns() {
         "48 8B FA 48 8B F1 4C 8D "
         "40 18 48 8D 15 ?? ?? ?? "
         "00 48 8D 0D ?? ?? ?? 00 "
-        "E8 ?? E4 FF FF 8B D8 85 "
+        "E8 ?? ?? FF FF 8B D8 85 "
         "C0 78 2F 48 8B 4C 24 50 "
         "48 8B 01 4C 8B C7 48 8B "
         "D6 48 8B 80 E8 00 00 00 "
@@ -178,7 +135,7 @@ void InitializePatterns() {
         "48 8B FA 48 8B F1 4C 8D "
         "40 18 48 8D 15 ?? ?? ?? "
         "00 48 8D 0D ?? ?? ?? 00 "
-        "E8 ?? E5 FF FF 8B D8 85 "
+        "E8 ?? ?? FF FF 8B D8 85 "
         "C0 78 2F 48 8B 4C 24 50 "
         "48 8B 01 4C 8B C7 48 8B "
         "D6 48 8B 80 E0 00 00 00 "
@@ -207,8 +164,7 @@ void PerformPatching() {
     DWORD currentProcessId = GetCurrentProcessId();
     DWORD currentThreadId = GetCurrentThreadId();
 
-    // Suspend all threads
-    SuspendAllThreads(currentProcessId, currentThreadId);
+   
     InitializePatterns();
     // Get module information
     MODULEINFO moduleInfo;
@@ -240,7 +196,7 @@ void PerformPatching() {
     }
 
     // Resume all threads
-    ResumeAllThreads(currentProcessId, currentThreadId);
+    
 }
 
 // Initialize patterns
@@ -249,18 +205,8 @@ void PerformPatching() {
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
-        DisableThreadLibraryCalls(hModule);
-
-        // Initialize patterns
-
-
-        // Create a thread to perform patching
-        CreateThread(NULL, 0, [](LPVOID) -> DWORD {
-            //Sleep(100); // Small delay to ensure injection is complete
-            PerformPatching();
-            return 0;
-            }, NULL, 0, NULL);
-
+        PerformPatching();
+		//deatch dll
         break;
 
     case DLL_PROCESS_DETACH:
